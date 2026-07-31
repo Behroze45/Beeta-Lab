@@ -3,15 +3,24 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes.health import router as health_router
+from app.api.router import api_router
 from app.core.config import settings
+from app.core.exceptions import register_exception_handlers
+from app.core.logging import logger
 from app.db.session import create_db_and_tables
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    logger.info("Starting Beeta Lab API...")
+
     create_db_and_tables()
+
+    logger.info("SQLite database initialized.")
+
     yield
+
+    logger.info("Stopping Beeta Lab API...")
 
 
 app = FastAPI(
@@ -19,6 +28,8 @@ app = FastAPI(
     version=settings.app_version,
     lifespan=lifespan,
 )
+
+register_exception_handlers(app)
 
 app.add_middleware(
     CORSMiddleware,
@@ -28,7 +39,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(health_router)
+app.include_router(api_router)
 
 
 @app.get("/")
